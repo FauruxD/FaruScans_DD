@@ -30,20 +30,22 @@ export default async function GenrePagedPage({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <SectionHeader
-        title={`Genre ${slug.replaceAll("-", " ")}`}
-        description={`Halaman ${page}`}
-      />
-      <ErrorMessage message={result.error} />
-      <div className="mt-6">
-        <ComicGrid comics={comics} emptyTitle="Genre ini kosong" />
-      </div>
-      <Pagination
-        currentPage={page}
-        basePath={`/genre/${slug}`}
-        queryMode={false}
-        hasNextPage={Boolean(result.data.hasNextPage)}
-      />
+      <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-900/60 sm:p-5">
+        <SectionHeader
+          title={`Genre ${slug.replaceAll("-", " ")}`}
+          description={`Halaman ${page}`}
+        />
+        <ErrorMessage message={result.error} />
+        <div className="mt-6">
+          <ComicGrid comics={comics} emptyTitle="Genre ini kosong" />
+        </div>
+        <Pagination
+          currentPage={page}
+          basePath={`/genre/${slug}`}
+          queryMode={false}
+          hasNextPage={Boolean(result.data.hasNextPage)}
+        />
+      </section>
     </div>
   );
 }

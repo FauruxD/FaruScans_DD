@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -19,6 +21,11 @@
 }
 
 :root {
+  --background: #ffffff;
+  --foreground: #09090b;
+}
+
+.dark {
   --background: #09090b;
   --foreground: #f4f4f5;
 }
@@ -47,9 +54,14 @@ html {
 }
 
 body {
-  background: linear-gradient(180deg, #09090b 0%, #111113 45%, #09090b 100%);
+  @apply bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-white;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f4f5 45%, #ffffff 100%);
   color: var(--foreground);
   font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+}
+
+.dark body {
+  background: linear-gradient(180deg, #09090b 0%, #111113 45%, #09090b 100%);
 }
 
 .glass {
@@ -94,9 +106,14 @@ body {
 }
 
 .skeleton-shimmer {
-  background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%);
+  background: linear-gradient(90deg, #e4e4e7 25%, #f4f4f5 50%, #e4e4e7 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.dark .skeleton-shimmer {
+  background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%);
+  background-size: 200% 100%;
 }
 
 @keyframes fadeIn {

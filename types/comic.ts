@@ -13,10 +13,15 @@ export interface NormalizedComic {
   updateTime?: string;
   latestChapterTitle?: string;
   latestChapterSlug?: string;
+  latestChapterHref?: string;
   isColored?: boolean;
   views?: string;
   description?: string;
 }
+
+export type PustakaTypeFilter = "all" | "manga" | "manhwa" | "manhua";
+
+export type PustakaSortOption = "latest" | "az" | "za" | "views";
 
 export interface ApiResult<T> {
   data: T;
@@ -275,6 +280,8 @@ export interface PustakaItem {
 export interface PustakaResponse {
   page?: number;
   results?: PustakaItem[];
+  hasNextPage?: boolean;
+  sourcePages?: number[];
 }
 
 // --- /berwarna ---

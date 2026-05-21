@@ -30,7 +30,7 @@ export default function SearchBar({
         value={keyword}
         onChange={(event) => setKeyword(event.target.value)}
         placeholder={compact ? "Cari" : "Cari judul komik..."}
-        className="h-11 w-full rounded-lg border border-white/10 bg-zinc-950/70 pl-10 pr-4 text-sm text-zinc-100 outline-none transition focus:border-cyan-400/60 focus:bg-zinc-950 focus:ring-2 focus:ring-cyan-400/15"
+        className="h-11 w-full rounded-lg border border-zinc-200 bg-white pl-10 pr-4 text-sm text-zinc-950 outline-none transition focus:border-cyan-500/70 focus:bg-white focus:ring-2 focus:ring-cyan-400/15 dark:border-white/10 dark:bg-zinc-950/70 dark:text-zinc-100 dark:focus:bg-zinc-950"
       />
     </form>
   );

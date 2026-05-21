@@ -3,6 +3,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Images } from "lucide-react";
 import Link from "next/link";
 import EmptyState from "@/components/EmptyState";
 import ErrorMessage from "@/components/ErrorMessage";
+import ReadChapterMarker from "@/components/ReadChapterMarker";
 import ReaderImage from "@/components/ReaderImage";
 import { fetchChapterDetail } from "@/lib/api";
 import {
@@ -60,13 +61,14 @@ export default async function ReaderPage({
   const nextHref = navHref(data.navigation?.nextChapter, slug);
 
   return (
-    <div className="bg-zinc-950">
-      <div className="sticky top-[73px] z-40 border-b border-white/10 bg-zinc-950/92 backdrop-blur-xl md:top-[65px]">
+    <div className="bg-zinc-50 dark:bg-zinc-950">
+      <ReadChapterMarker slug={slug} chapter={chapter} />
+      <div className="sticky top-[73px] z-40 border-b border-zinc-200 bg-white/95 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/92 md:top-[65px]">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Link
               href={`/komik/${detailSlug}`}
-              className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-sm font-semibold text-zinc-100 transition hover:bg-white/10"
+              className="flex h-10 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-100 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10"
             >
               <ArrowLeft className="size-4" aria-hidden="true" />
               Detail komik
@@ -75,7 +77,7 @@ export default async function ReaderPage({
               <Link
                 href={prevHref || "#"}
                 aria-disabled={!prevHref}
-                className="flex h-10 items-center gap-1 rounded-lg border border-white/10 bg-zinc-900 px-3 text-sm font-semibold text-zinc-100 aria-disabled:pointer-events-none aria-disabled:opacity-40"
+                className="flex h-10 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-900 aria-disabled:pointer-events-none aria-disabled:opacity-40 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100"
               >
                 <ChevronLeft className="size-4" aria-hidden="true" />
                 Prev
@@ -83,7 +85,7 @@ export default async function ReaderPage({
               <Link
                 href={nextHref || "#"}
                 aria-disabled={!nextHref}
-                className="flex h-10 items-center gap-1 rounded-lg border border-white/10 bg-zinc-900 px-3 text-sm font-semibold text-zinc-100 aria-disabled:pointer-events-none aria-disabled:opacity-40"
+                className="flex h-10 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-900 aria-disabled:pointer-events-none aria-disabled:opacity-40 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100"
               >
                 Next
                 <ChevronRight className="size-4" aria-hidden="true" />
@@ -91,7 +93,7 @@ export default async function ReaderPage({
             </div>
           </div>
           <div>
-            <h1 className="line-clamp-2 text-base font-bold text-white sm:text-xl">
+            <h1 className="line-clamp-2 text-base font-bold text-zinc-950 dark:text-white sm:text-xl">
               {textFallback(data.title, `Chapter ${chapter}`)}
             </h1>
             <p className="mt-1 flex items-center gap-2 text-xs text-zinc-500 sm:text-sm">
@@ -126,7 +128,7 @@ export default async function ReaderPage({
         <Link
           href={prevHref || "#"}
           aria-disabled={!prevHref}
-          className="flex h-12 items-center gap-2 rounded-lg border border-white/10 bg-zinc-900 px-4 text-sm font-bold text-zinc-100 aria-disabled:pointer-events-none aria-disabled:opacity-40"
+          className="flex h-12 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-900 aria-disabled:pointer-events-none aria-disabled:opacity-40 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100"
         >
           <ChevronLeft className="size-4" aria-hidden="true" />
           Chapter sebelumnya

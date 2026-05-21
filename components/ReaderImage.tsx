@@ -15,7 +15,7 @@ export default function ReaderImage({
   const [loaded, setLoaded] = useState(false);
 
   return (
-    <figure className="relative mx-auto w-full max-w-4xl overflow-hidden bg-zinc-950">
+    <figure className="relative mx-auto w-full max-w-4xl overflow-hidden bg-zinc-100 dark:bg-zinc-950">
       {!loaded ? (
         <div className="skeleton-shimmer absolute inset-0 min-h-[70vh]" />
       ) : null}

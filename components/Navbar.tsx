@@ -1,56 +1,96 @@
-import { BookOpen, Library, Palette, Tags } from "lucide-react";
+"use client";
+
+import { Compass, Flame, Home, Library, Search } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
-import SearchBar from "./SearchBar";
+import { usePathname } from "next/navigation";
+import ThemeToggle from "./ThemeToggle";
+import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/pustaka", label: "Pustaka", icon: Library },
-  { href: "/genre", label: "Genre", icon: Tags },
-  { href: "/berwarna", label: "Berwarna", icon: Palette },
+  {
+    href: "/",
+    label: "Home",
+    icon: Home,
+    isActive: (pathname: string) => pathname === "/",
+  },
+  {
+    href: "/pustaka",
+    label: "Comics",
+    icon: Compass,
+    isActive: (pathname: string) => pathname.startsWith("/pustaka"),
+  },
+  {
+    href: "/#popular",
+    label: "Popular",
+    icon: Flame,
+    isActive: () => false,
+  },
+  {
+    href: "/pustaka",
+    label: "Library",
+    icon: Library,
+    isActive: () => false,
+  },
 ];
 
 export default function Navbar() {
+  const pathname = usePathname();
+
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-zinc-950/90 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="flex size-10 items-center justify-center rounded-lg bg-cyan-400 text-zinc-950">
-              <BookOpen className="size-5" aria-hidden="true" />
-            </span>
-            <span className="text-lg font-bold tracking-tight text-white">
-              KomikU
-            </span>
-          </Link>
-          <nav className="hidden items-center gap-1 md:flex">
-            {navItems.map(({ href, label, icon: Icon }) => (
+    <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur-xl dark:border-cyan-500/10 dark:bg-slate-950/95">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:h-[72px] lg:px-8">
+        <Link href="/" className="flex shrink-0 items-center gap-3">
+          <Image
+            src="/faruscan-logo.png"
+            alt="FaruScan Logo"
+            width={42}
+            height={42}
+            priority
+            className="h-10 w-10 object-contain"
+          />
+          <span className="text-xl font-black tracking-tight text-zinc-950 dark:text-white">
+            FaruScan
+          </span>
+        </Link>
+
+        <nav className="hidden h-full items-center gap-2 md:flex">
+          {navItems.map(({ href, label, icon: Icon, isActive }) => {
+            const active = isActive(pathname);
+
+            return (
               <Link
-                key={href}
+                key={`${label}-${href}`}
                 href={href}
-                className="flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium text-zinc-300 transition hover:bg-white/10 hover:text-white"
+                className={cn(
+                  "relative flex h-full items-center gap-2 px-3 text-sm font-semibold transition",
+                  active
+                    ? "text-cyan-600 dark:text-white"
+                    : "text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
+                )}
               >
                 <Icon className="size-4" aria-hidden="true" />
-                {label}
+                <span>{label}</span>
+                <span
+                  className={cn(
+                    "absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-cyan-400 transition-opacity",
+                    active ? "opacity-100" : "opacity-0"
+                  )}
+                />
               </Link>
-            ))}
-          </nav>
-          <div className="hidden w-full max-w-sm md:block">
-            <SearchBar />
-          </div>
-        </div>
-        <div className="grid grid-cols-3 gap-2 md:hidden">
-          {navItems.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex h-10 items-center justify-center gap-2 rounded-lg bg-white/5 text-xs font-medium text-zinc-300"
-            >
-              <Icon className="size-4" aria-hidden="true" />
-              {label}
-            </Link>
-          ))}
-        </div>
-        <div className="md:hidden">
-          <SearchBar compact />
+            );
+          })}
+        </nav>
+
+        <div className="flex items-center gap-2">
+          <Link
+            href="/search"
+            aria-label="Cari komik"
+            className="flex size-11 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-100 text-zinc-700 transition hover:bg-zinc-200 dark:border-cyan-500/10 dark:bg-slate-900 dark:text-zinc-300 dark:hover:bg-slate-800 dark:hover:text-white"
+          >
+            <Search className="size-5" aria-hidden="true" />
+          </Link>
+          <ThemeToggle />
         </div>
       </div>
     </header>

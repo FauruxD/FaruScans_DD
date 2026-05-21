@@ -7,11 +7,13 @@ import type {
   GenreDetailResponse,
   GenreRekomendasiItem,
   PopulerResponse,
+  PustakaItem,
   PustakaResponse,
   RekomendasiItem,
   SearchResponse,
   TerbaruItem,
 } from "@/types/comic";
+import { extractSlugFromDetailLink } from "@/lib/utils";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "https://komiku-rest-api.vercel.app";
@@ -118,13 +120,66 @@ export async function searchComics(keyword: string) {
 export async function fetchLibraryComics(page = 1) {
   const normalizedPage = Math.max(1, Number(page) || 1);
   return safeApi<PustakaResponse>(
-    () =>
-      fetcher<PustakaResponse>(
-        normalizedPage > 1 ? `/pustaka/page/${normalizedPage}` : "/pustaka",
-        300
-      ),
-    { page: normalizedPage, results: [] }
+    async () => {
+      const pageSize = 25;
+      const apiPageSize = 10;
+      const startIndex = (normalizedPage - 1) * pageSize;
+      const apiStartPage = Math.floor(startIndex / apiPageSize) + 1;
+      const offset = startIndex % apiPageSize;
+      const fetchPageCount = Math.ceil((offset + pageSize + 1) / apiPageSize);
+      const sourcePages = Array.from(
+        { length: fetchPageCount },
+        (_, index) => apiStartPage + index
+      );
+      const settled = await Promise.allSettled(
+        sourcePages.map((sourcePage) =>
+          fetcher<PustakaResponse>(
+            sourcePage > 1 ? `/pustaka/page/${sourcePage}` : "/pustaka",
+            300
+          )
+        )
+      );
+      const fulfilled = settled
+        .filter(
+          (result): result is PromiseFulfilledResult<PustakaResponse> =>
+            result.status === "fulfilled"
+        )
+        .map((result) => result.value);
+
+      if (!fulfilled.length) {
+        const firstError = settled.find(
+          (result): result is PromiseRejectedResult => result.status === "rejected"
+        );
+        throw firstError?.reason instanceof Error
+          ? firstError.reason
+          : new Error("Gagal mengambil data pustaka.");
+      }
+
+      const results = dedupeLibraryItems(fulfilled.flatMap((item) => item.results || []));
+      const lastSourceCount = fulfilled[fulfilled.length - 1]?.results?.length || 0;
+      const pageResults = results.slice(offset, offset + pageSize);
+
+      return {
+        page: normalizedPage,
+        sourcePages,
+        results: pageResults,
+        hasNextPage: results.length > offset + pageSize || lastSourceCount > 0,
+      };
+    },
+    { page: normalizedPage, results: [], hasNextPage: false }
   );
+}
+
+function dedupeLibraryItems(items: PustakaItem[]) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key =
+      extractSlugFromDetailLink(item.detailUrl || item.url) ||
+      item.title?.trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export async function fetchAllGenres() {
