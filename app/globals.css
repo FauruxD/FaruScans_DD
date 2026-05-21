@@ -111,11 +111,12 @@ body {
   animation-timing-function: ease-in-out, ease-in-out;
   animation-iteration-count: infinite, infinite;
   animation-direction: alternate, alternate;
+  will-change: transform, opacity;
 }
 
 @keyframes star-twinkle {
   from {
-    opacity: 0.25;
+    opacity: 0.2;
   }
   to {
     opacity: 0.9;

@@ -6,6 +6,7 @@ import ErrorMessage from "@/components/ErrorMessage";
 import ReadChapterMarker from "@/components/ReadChapterMarker";
 import ReaderControls from "@/components/ReaderControls";
 import ReaderImage from "@/components/ReaderImage";
+import ReaderScrollButtons from "@/components/ReaderScrollButtons";
 import { fetchChapterDetail, fetchComicDetail } from "@/lib/api";
 import {
   extractChapterFromApiLink,
@@ -82,6 +83,7 @@ export default async function ReaderPage({
   return (
     <div className="bg-zinc-50 dark:bg-zinc-950">
       <ReadChapterMarker slug={slug} chapter={chapter} />
+      <ReaderScrollButtons />
       <header className="border-b border-zinc-200 bg-white dark:border-white/10 dark:bg-zinc-950">
         <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

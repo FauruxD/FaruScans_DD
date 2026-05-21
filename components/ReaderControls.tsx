@@ -69,7 +69,7 @@ export default function ReaderControls({
 
   return (
     <div
-      className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center"
+      className="grid w-full grid-cols-[64px_1fr_64px] items-center gap-2 sm:flex sm:justify-center sm:gap-4"
       data-detail-href={detailHref}
     >
       <ControlLink
@@ -80,12 +80,12 @@ export default function ReaderControls({
         Prev
       </ControlLink>
 
-      <div ref={wrapperRef} className="relative w-full sm:w-[240px]">
+      <div ref={wrapperRef} className="relative min-w-0 sm:w-64">
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
-          className="flex h-12 w-full min-w-[220px] items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white/80 px-5 py-3 text-sm font-bold text-zinc-950 transition hover:border-cyan-400 hover:bg-zinc-100 dark:border-white/10 dark:bg-zinc-900 dark:text-white dark:hover:bg-white/5"
+          className="flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white/80 px-3 text-sm font-bold text-zinc-950 transition hover:border-cyan-400 hover:bg-zinc-100 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 sm:w-64 sm:px-5"
         >
           <span className="truncate">{currentLabel}</span>
           <ChevronDown
@@ -145,12 +145,12 @@ function ControlLink({
     <Link
       href={disabled ? "#" : href}
       aria-disabled={disabled}
-      className="flex h-12 items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-bold text-zinc-900 transition hover:border-cyan-400/60 hover:bg-zinc-100 aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-40 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-white/10"
+      className="flex h-12 w-16 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white/80 px-2 text-sm font-bold text-zinc-950 transition hover:border-cyan-400/60 hover:bg-zinc-100 aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 sm:w-32 sm:px-5"
     >
       {direction === "prev" ? (
         <ChevronLeft className="size-4" aria-hidden="true" />
       ) : null}
-      {children}
+      <span className="hidden sm:inline">{children}</span>
       {direction === "next" ? (
         <ChevronRight className="size-4" aria-hidden="true" />
       ) : null}
