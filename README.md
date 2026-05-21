@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FaruScan
 
-## Getting Started
+Modern manga, manhwa, and manhua reader built with **Next.js**, **TypeScript**, and **Tailwind CSS**.
 
-First, run the development server:
+FaruScan provides a clean dark-mode reading experience with responsive UI, chapter tracking, filters, search, and modern manga-style layouts.
+
+---
+
+# Preview
+
+## Features
+
+- Modern dark/light mode UI
+- Manga / Manhwa / Manhua reader
+- Responsive mobile-friendly layout
+- Reading history tracking
+- Chapter read indicator
+- Search & filters
+- Genre browsing
+- Latest updates
+- Popular comics
+- Recommendations
+- Smooth pagination
+- Fast Next.js App Router architecture
+
+---
+
+# Tech Stack
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- next-themes
+- Lucide React
+- Vercel Deployment
+
+---
+
+# Project Structure
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+app/
+  page.tsx
+  layout.tsx
+  globals.css
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+  pustaka/
+    page.tsx
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+  komik/
+    [slug]/
+      page.tsx
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+  baca/
+    [slug]/
+      [chapter]/
+        page.tsx
 
-## Learn More
+  genre/
+    page.tsx
+    [slug]/
+      page.tsx
 
-To learn more about Next.js, take a look at the following resources:
+  search/
+    page.tsx
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+components/
+  Navbar.tsx
+  ComicCard.tsx
+  ComicGrid.tsx
+  ChapterList.tsx
+  Pagination.tsx
+  PustakaFilters.tsx
+  ThemeProvider.tsx
+  ThemeToggle.tsx
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+lib/
+  api.ts
+  utils.ts
+  reading-history.ts
 
-## Deploy on Vercel
+types/
+  comic.ts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+public/
+  faruscan-logo.png
+  hero-bg.png
