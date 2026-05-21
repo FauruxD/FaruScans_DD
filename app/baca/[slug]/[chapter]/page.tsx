@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
-import { ArrowLeft, ChevronLeft, ChevronRight, Images } from "lucide-react";
+import { ArrowLeft, Images } from "lucide-react";
 import Link from "next/link";
 import EmptyState from "@/components/EmptyState";
 import ErrorMessage from "@/components/ErrorMessage";
 import ReadChapterMarker from "@/components/ReadChapterMarker";
+import ReaderControls from "@/components/ReaderControls";
 import ReaderImage from "@/components/ReaderImage";
-import { fetchChapterDetail } from "@/lib/api";
+import { fetchChapterDetail, fetchComicDetail } from "@/lib/api";
 import {
   extractChapterFromApiLink,
   extractSlugFromDetailLink,
+  normalizeReaderChapters,
   safeSegment,
   textFallback,
+  toArray,
 } from "@/lib/utils";
 
 export async function generateMetadata({
@@ -22,14 +25,13 @@ export async function generateMetadata({
   return { title: `${slug} chapter ${chapter}` };
 }
 
-function navHref(
+function navChapter(
   item: { apiLink?: string | null; chapter?: string; chapterNumber?: string } | null | undefined,
-  fallbackSlug: string
 ) {
   if (!item) return "";
   const chapter =
     item.chapter || item.chapterNumber || extractChapterFromApiLink(item.apiLink);
-  return chapter ? `/baca/${fallbackSlug}/${safeSegment(chapter)}` : "";
+  return safeSegment(chapter);
 }
 
 export default async function ReaderPage({
@@ -40,7 +42,10 @@ export default async function ReaderPage({
   const routeParams = await params;
   const slug = safeSegment(routeParams.slug);
   const chapter = safeSegment(routeParams.chapter);
-  const result = await fetchChapterDetail(slug, chapter);
+  const [result, detailResult] = await Promise.all([
+    fetchChapterDetail(slug, chapter),
+    fetchComicDetail(slug),
+  ]);
   const data = result.data;
 
   if (!data) {
@@ -57,55 +62,61 @@ export default async function ReaderPage({
     slug;
   const images = (data.images || []).filter((image) => image.src);
   const pageCount = images.length || data.meta?.totalImages || 0;
-  const prevHref = navHref(data.navigation?.prevChapter, slug);
-  const nextHref = navHref(data.navigation?.nextChapter, slug);
+  const detailHref = `/komik/${detailSlug}`;
+  const chapters = normalizeReaderChapters(
+    toArray(detailResult.data?.chapters),
+    detailSlug
+  );
+  const controlChapters = chapters.length
+    ? chapters
+    : [
+        {
+          title: textFallback(data.title, `Chapter ${chapter}`),
+          chapterSlug: chapter,
+          href: `/baca/${detailSlug}/${chapter}`,
+        },
+      ];
+  const prevChapter = navChapter(data.navigation?.prevChapter);
+  const nextChapter = navChapter(data.navigation?.nextChapter);
 
   return (
     <div className="bg-zinc-50 dark:bg-zinc-950">
       <ReadChapterMarker slug={slug} chapter={chapter} />
-      <div className="sticky top-[73px] z-40 border-b border-zinc-200 bg-white/95 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/92 md:top-[65px]">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+      <header className="border-b border-zinc-200 bg-white dark:border-white/10 dark:bg-zinc-950">
+        <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <Link
-              href={`/komik/${detailSlug}`}
+              href={detailHref}
               className="flex h-10 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-100 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10"
             >
               <ArrowLeft className="size-4" aria-hidden="true" />
               Detail komik
             </Link>
-            <div className="flex gap-2">
-              <Link
-                href={prevHref || "#"}
-                aria-disabled={!prevHref}
-                className="flex h-10 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-900 aria-disabled:pointer-events-none aria-disabled:opacity-40 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100"
-              >
-                <ChevronLeft className="size-4" aria-hidden="true" />
-                Prev
-              </Link>
-              <Link
-                href={nextHref || "#"}
-                aria-disabled={!nextHref}
-                className="flex h-10 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-900 aria-disabled:pointer-events-none aria-disabled:opacity-40 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100"
-              >
-                Next
-                <ChevronRight className="size-4" aria-hidden="true" />
-              </Link>
+            <div className="min-w-0 sm:text-right">
+              <h1 className="line-clamp-2 text-base font-bold text-zinc-950 dark:text-white sm:text-xl">
+                {textFallback(data.title, `Chapter ${chapter}`)}
+              </h1>
+              <p className="mt-1 flex items-center gap-2 text-xs text-zinc-500 sm:justify-end sm:text-sm">
+                <Images className="size-4" aria-hidden="true" />
+                {textFallback(data.mangaInfo?.title, detailSlug)} - {pageCount} halaman
+              </p>
             </div>
           </div>
-          <div>
-            <h1 className="line-clamp-2 text-base font-bold text-zinc-950 dark:text-white sm:text-xl">
-              {textFallback(data.title, `Chapter ${chapter}`)}
-            </h1>
-            <p className="mt-1 flex items-center gap-2 text-xs text-zinc-500 sm:text-sm">
-              <Images className="size-4" aria-hidden="true" />
-              {textFallback(data.mangaInfo?.title, detailSlug)} - {pageCount} halaman
-            </p>
-          </div>
+
+          <ReaderControls
+            slug={detailSlug}
+            currentChapter={chapter}
+            chapters={controlChapters}
+            prevChapter={prevChapter}
+            nextChapter={nextChapter}
+            detailHref={detailHref}
+          />
         </div>
-      </div>
+      </header>
 
       <main className="mx-auto max-w-5xl px-0 py-4 sm:px-4">
         <ErrorMessage message={result.error} />
+        <ErrorMessage message={detailResult.error} />
         {images.length ? (
           <div className="space-y-1">
             {images.map((image, index) => (
@@ -124,24 +135,16 @@ export default async function ReaderPage({
         )}
       </main>
 
-      <div className="mx-auto flex max-w-5xl justify-between gap-3 px-4 py-8 sm:px-6 lg:px-8">
-        <Link
-          href={prevHref || "#"}
-          aria-disabled={!prevHref}
-          className="flex h-12 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-900 aria-disabled:pointer-events-none aria-disabled:opacity-40 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100"
-        >
-          <ChevronLeft className="size-4" aria-hidden="true" />
-          Chapter sebelumnya
-        </Link>
-        <Link
-          href={nextHref || "#"}
-          aria-disabled={!nextHref}
-          className="flex h-12 items-center gap-2 rounded-lg bg-cyan-300 px-4 text-sm font-bold text-zinc-950 aria-disabled:pointer-events-none aria-disabled:opacity-40"
-        >
-          Chapter berikutnya
-          <ChevronRight className="size-4" aria-hidden="true" />
-        </Link>
-      </div>
+      <footer className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <ReaderControls
+          slug={detailSlug}
+          currentChapter={chapter}
+          chapters={controlChapters}
+          prevChapter={prevChapter}
+          nextChapter={nextChapter}
+          detailHref={detailHref}
+        />
+      </footer>
     </div>
   );
 }

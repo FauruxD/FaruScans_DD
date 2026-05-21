@@ -23,6 +23,12 @@ export type PustakaTypeFilter = "all" | "manga" | "manhwa" | "manhua";
 
 export type PustakaSortOption = "latest" | "az" | "za" | "views";
 
+export interface ReaderControlChapter {
+  title: string;
+  chapterSlug: string;
+  href: string;
+}
+
 export interface ApiResult<T> {
   data: T;
   error: string | null;

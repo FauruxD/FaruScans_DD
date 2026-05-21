@@ -36,9 +36,15 @@ const navItems = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const isReaderPage = pathname.startsWith("/baca/");
 
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur-xl dark:border-cyan-500/10 dark:bg-slate-950/95">
+    <header
+      className={cn(
+        "border-b border-zinc-200 bg-white/95 backdrop-blur-xl dark:border-cyan-500/10 dark:bg-slate-950/95",
+        isReaderPage ? "relative" : "sticky top-0 z-50"
+      )}
+    >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:h-[72px] lg:px-8">
         <Link href="/" className="flex shrink-0 items-center gap-3">
           <Image

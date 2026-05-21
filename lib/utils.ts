@@ -1,6 +1,11 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { NormalizedComic, PustakaSortOption } from "@/types/comic";
+import type {
+  ChapterItem,
+  NormalizedComic,
+  PustakaSortOption,
+  ReaderControlChapter,
+} from "@/types/comic";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -145,6 +150,31 @@ export function buildPustakaUrl({
   params.set("page", String(Math.max(1, Number(page) || 1)));
 
   return `/pustaka?${params.toString()}`;
+}
+
+export function normalizeReaderChapters(
+  chapters: ChapterItem[],
+  slug: string
+): ReaderControlChapter[] {
+  const normalizedSlug = safeSegment(slug);
+  const seen = new Set<string>();
+
+  return chapters
+    .map((chapter, index) => {
+      const chapterSlug = safeSegment(
+        chapter.chapterNumber || extractChapterFromApiLink(chapter.apiLink)
+      );
+
+      if (!chapterSlug || seen.has(chapterSlug)) return null;
+      seen.add(chapterSlug);
+
+      return {
+        title: chapter.title || `Chapter ${chapterSlug || index + 1}`,
+        chapterSlug,
+        href: `/baca/${normalizedSlug}/${chapterSlug}`,
+      };
+    })
+    .filter((chapter): chapter is ReaderControlChapter => Boolean(chapter));
 }
 
 function parseViews(value?: string | null) {
