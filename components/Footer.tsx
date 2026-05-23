@@ -12,8 +12,8 @@ export default function Footer() {
           <Link className="hover:text-zinc-950 dark:hover:text-zinc-200" href="/genre">
             Genre
           </Link>
-          <Link className="hover:text-zinc-950 dark:hover:text-zinc-200" href="/berwarna">
-            Berwarna
+          <Link className="hover:text-zinc-950 dark:hover:text-zinc-200" href="/popular">
+            Popular
           </Link>
         </div>
       </div>

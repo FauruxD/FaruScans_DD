@@ -203,9 +203,9 @@ function FilterControls({
         onChange={(value) => updateFilter({ type: value as PustakaTypeFilter })}
       >
         <option value="all">Semua</option>
+        <option value="doujin">Doujin</option>
         <option value="manga">Manga</option>
         <option value="manhwa">Manhwa</option>
-        <option value="manhua">Manhua</option>
       </FilterSelect>
 
       <FilterSelect

@@ -1,5 +1,5 @@
 // ==========================================
-// Types for Komiku REST API responses
+// Types for Komiku/Doujindesu REST API responses
 // ==========================================
 
 // --- Shared / Normalized ---
@@ -8,18 +8,26 @@ export interface NormalizedComic {
   title: string;
   slug: string;
   thumbnail: string;
-  type: string;
-  genre: string;
+  cover?: string;
+  type?: string;
+  genre?: string;
+  genres?: string[];
   updateTime?: string;
+  updatedAt?: string;
+  rating?: string;
   latestChapterTitle?: string;
   latestChapterSlug?: string;
   latestChapterHref?: string;
+  latestChapter?: {
+    title?: string;
+    chapterSlug?: string;
+  };
   isColored?: boolean;
   views?: string;
   description?: string;
 }
 
-export type PustakaTypeFilter = "all" | "manga" | "manhwa" | "manhua";
+export type PustakaTypeFilter = "all" | "doujin" | "doujinshi" | "manga" | "manhwa" | "manhua";
 
 export type PustakaSortOption = "latest" | "az" | "za" | "views";
 
@@ -32,6 +40,65 @@ export interface ReaderControlChapter {
 export interface ApiResult<T> {
   data: T;
   error: string | null;
+}
+
+// --- Doujindesu REST API ---
+
+export type DoujindesuListItem = {
+  title?: string;
+  slug?: string;
+  url?: string;
+  cover?: string;
+  type?: string;
+  rating?: string;
+  chapter?: string;
+  latestChapter?: string;
+};
+
+export type DoujindesuDetail = {
+  title?: string;
+  alternativeTitle?: string;
+  description?: string;
+  cover?: string;
+  type?: string;
+  rating?: string;
+  status?: string;
+  author?: string;
+  artist?: string;
+  genres?: string[];
+  tags?: string[];
+  chapters?: DoujindesuChapter[];
+};
+
+export type DoujindesuChapter = {
+  chapter?: string;
+  title?: string;
+  slug?: string;
+  url?: string;
+  uploaded?: string;
+};
+
+export type DoujindesuReader = {
+  title?: string;
+  chapter?: string;
+  images?: string[];
+  prevChapter?: {
+    title?: string;
+    slug?: string;
+    url?: string;
+  };
+  nextChapter?: {
+    title?: string;
+    slug?: string;
+    url?: string;
+  };
+};
+
+export interface HomeResponse {
+  latest: NormalizedComic[];
+  popular: PopulerResponse;
+  recommended: NormalizedComic[];
+  genres?: GenreAllItem[];
 }
 
 // --- /terbaru ---

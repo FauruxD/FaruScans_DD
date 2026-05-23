@@ -5,9 +5,9 @@ import EmptyState from "@/components/EmptyState";
 import ErrorMessage from "@/components/ErrorMessage";
 import SectionHeader from "@/components/SectionHeader";
 import StarfieldBackground from "@/components/StarfieldBackground";
-import { fetchPopularComics } from "@/lib/api";
-import { cn, normalizeComicItem, safeSegment, toArray } from "@/lib/utils";
-import type { NormalizedComic, PopulerItem } from "@/types/comic";
+import { fetchPopular } from "@/lib/api";
+import { cn, normalizeComicItem, safeSegment } from "@/lib/utils";
+import type { NormalizedComic } from "@/types/comic";
 
 export const metadata: Metadata = {
   title: "Komik Populer",
@@ -15,9 +15,9 @@ export const metadata: Metadata = {
 
 const tabs = [
   { label: "Semua", value: "all" },
+  { label: "Doujin", value: "doujinshi" },
   { label: "Manga", value: "manga" },
   { label: "Manhwa", value: "manhwa" },
-  { label: "Manhua", value: "manhua" },
 ] as const;
 
 type PopularType = (typeof tabs)[number]["value"];
@@ -32,16 +32,19 @@ export default async function PopularPage({
   const type = tabs.some((item) => item.value === typeParam)
     ? (typeParam as PopularType)
     : "all";
-  const result = await fetchPopularComics();
-  const manga = normalizePopularItems(toArray(result.data.manga?.items));
-  const manhwa = normalizePopularItems(toArray(result.data.manhwa?.items));
-  const manhua = normalizePopularItems(toArray(result.data.manhua?.items));
-  const all = dedupeComics([...manga, ...manhwa, ...manhua]);
+  const result = await fetchPopular();
+  const all = dedupeComics(result.data.map(normalizeComicItem).filter((comic) => comic.slug));
+  const manga = all.filter((comic) => comic.type?.toLowerCase().includes("manga"));
+  const manhwa = all.filter((comic) => comic.type?.toLowerCase().includes("manhwa"));
+  const doujinshi = all.filter((comic) => {
+    const comicType = comic.type?.toLowerCase() || "";
+    return comicType.includes("doujin") || (!comicType.includes("manga") && !comicType.includes("manhwa"));
+  });
   const comicsByType: Record<PopularType, NormalizedComic[]> = {
     all,
+    doujinshi,
     manga,
     manhwa,
-    manhua,
   };
   const comics = comicsByType[type];
 
@@ -86,10 +89,6 @@ export default async function PopularPage({
       </div>
     </div>
   );
-}
-
-function normalizePopularItems(items: PopulerItem[]) {
-  return items.map(normalizeComicItem).filter((comic) => comic.slug);
 }
 
 function dedupeComics(comics: NormalizedComic[]) {

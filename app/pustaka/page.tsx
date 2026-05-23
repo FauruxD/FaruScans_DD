@@ -3,14 +3,19 @@ import Link from "next/link";
 import ComicGrid from "@/components/ComicGrid";
 import EmptyState from "@/components/EmptyState";
 import ErrorMessage from "@/components/ErrorMessage";
-import Pagination from "@/components/Pagination";
 import PustakaFilters from "@/components/PustakaFilters";
 import SectionHeader from "@/components/SectionHeader";
-import { fetchAllGenres, fetchLibraryComics } from "@/lib/api";
+import {
+  fetchAllLibrary,
+  fetchDoujinList,
+  fetchGenres,
+  fetchGenreDetail,
+  fetchMangaList,
+  fetchManhwaList,
+} from "@/lib/api";
 import {
   matchesComicGenre,
   matchesComicSearch,
-  matchesComicType,
   normalizeComicItem,
   safeSegment,
   sortComics,
@@ -21,14 +26,15 @@ export const metadata: Metadata = {
   title: "Pustaka",
 };
 
-const typeOptions = ["all", "manga", "manhwa", "manhua"] satisfies PustakaTypeFilter[];
+type DoujindesuPustakaType = Extract<PustakaTypeFilter, "all" | "doujin" | "manga" | "manhwa">;
+
+const typeOptions = ["all", "doujin", "manga", "manhwa"] satisfies DoujindesuPustakaType[];
 const sortOptions = ["latest", "az", "za", "views"] satisfies PustakaSortOption[];
 
 export default async function PustakaPage({
   searchParams,
 }: {
   searchParams: Promise<{
-    page?: string | string[];
     search?: string | string[];
     type?: string | string[];
     genre?: string | string[];
@@ -36,38 +42,39 @@ export default async function PustakaPage({
   }>;
 }) {
   const params = await searchParams;
-  const pageParam = Array.isArray(params.page) ? params.page[0] : params.page;
   const searchParam = pickParam(params.search);
   const typeParam = pickParam(params.type);
   const genreParam = pickParam(params.genre);
   const sortParam = pickParam(params.sort);
-  const page = Math.max(1, Number(pageParam) || 1);
-  const type = typeOptions.includes(typeParam as PustakaTypeFilter)
-    ? (typeParam as PustakaTypeFilter)
+  const type = typeOptions.includes(typeParam as DoujindesuPustakaType)
+    ? (typeParam as DoujindesuPustakaType)
     : "all";
   const sort = sortOptions.includes(sortParam as PustakaSortOption)
     ? (sortParam as PustakaSortOption)
     : "latest";
   const genre = safeSegment(genreParam) || "all";
+  const libraryRequest =
+    genre !== "all"
+      ? fetchGenreDetail(genre)
+      : fetchLibraryByType(type);
   const [result, genreResult] = await Promise.all([
-    fetchLibraryComics(page),
-    fetchAllGenres(),
+    libraryRequest,
+    fetchGenres(),
   ]);
-  const comics = (result.data.results || [])
+  const resultData = result.data as unknown[] | { data?: unknown[] };
+  const rawComics = Array.isArray(resultData) ? resultData : resultData.data || [];
+  const comics = rawComics
     .map(normalizeComicItem)
     .filter((comic) => comic.slug)
     .filter((comic) => matchesComicSearch(comic, searchParam))
-    .filter((comic) => matchesComicType(comic, type))
-    .filter((comic) => matchesComicGenre(comic, genre));
-  // Batasi jumlah card yang dirender di satu halaman pustaka.
-  const filteredComics = sortComics(comics, sort).slice(0, 30);
+    .filter((comic) => (genre !== "all" ? true : matchesComicGenre(comic, genre)));
+  const filteredComics = sortComics(comics, sort);
   const genres = genreResult.data
     .map((item) => ({
       title: item.title || item.titleAttr || item.slug || "Genre",
       slug: safeSegment(item.slug || item.apiGenreLink?.split("/").filter(Boolean).pop()),
     }))
     .filter((item) => item.slug);
-  const sourcePages = result.data.sourcePages?.join(", ");
   const hasFilters =
     Boolean(searchParam.trim()) || type !== "all" || genre !== "all" || sort !== "latest";
 
@@ -75,12 +82,8 @@ export default async function PustakaPage({
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-900/60 sm:p-5">
         <SectionHeader
-          title="Pustaka komik"
-          description={
-            sourcePages
-              ? `Halaman ${result.data.page || page}`
-              : `Halaman ${result.data.page || page}`
-          }
+          title="Katalog"
+          description={`${filteredComics.length} item dari Doujindesu`}
         />
         <ErrorMessage message={result.error} />
         <ErrorMessage message={genreResult.error} />
@@ -116,20 +119,16 @@ export default async function PustakaPage({
             <ComicGrid comics={filteredComics} emptyTitle="Pustaka kosong" />
           )}
         </div>
-        <Pagination
-          currentPage={page}
-          basePath="/pustaka"
-          hasNextPage={Boolean(result.data.hasNextPage)}
-          queryParams={{
-            search: searchParam.trim() || undefined,
-            type: type !== "all" ? type : undefined,
-            genre: genre !== "all" ? genre : undefined,
-            sort: sort !== "latest" ? sort : undefined,
-          }}
-        />
       </section>
     </div>
   );
+}
+
+function fetchLibraryByType(type: DoujindesuPustakaType) {
+  if (type === "doujin") return fetchDoujinList();
+  if (type === "manga") return fetchMangaList();
+  if (type === "manhwa") return fetchManhwaList();
+  return fetchAllLibrary();
 }
 
 function pickParam(value?: string | string[]) {
