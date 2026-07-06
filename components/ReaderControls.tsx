@@ -4,7 +4,7 @@ import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { cn, safeSegment } from "@/lib/utils";
+import { buildChapterHref, cn, safeSegment } from "@/lib/utils";
 import type { ReaderControlChapter } from "@/types/comic";
 
 export default function ReaderControls({
@@ -33,7 +33,7 @@ export default function ReaderControls({
         {
           title: `Chapter ${normalizedCurrent}`,
           chapterSlug: normalizedCurrent,
-          href: `/baca/${normalizedSlug}/${normalizedCurrent}`,
+          href: buildChapterHref(normalizedSlug, normalizedCurrent),
         },
       ];
   const currentLabel =
@@ -64,7 +64,7 @@ export default function ReaderControls({
     const next = safeSegment(value);
     setOpen(false);
     if (!next || next === normalizedCurrent) return;
-    router.push(`/baca/${normalizedSlug}/${next}`);
+    router.push(buildChapterHref(normalizedSlug, next));
   }
 
   return (
@@ -73,7 +73,7 @@ export default function ReaderControls({
       data-detail-href={detailHref}
     >
       <ControlLink
-        href={prevChapter ? `/baca/${normalizedSlug}/${safeSegment(prevChapter)}` : "#"}
+        href={prevChapter ? buildChapterHref(normalizedSlug, safeSegment(prevChapter)) : "#"}
         disabled={!prevChapter}
         direction="prev"
       >
@@ -120,7 +120,7 @@ export default function ReaderControls({
       </div>
 
       <ControlLink
-        href={nextChapter ? `/baca/${normalizedSlug}/${safeSegment(nextChapter)}` : "#"}
+        href={nextChapter ? buildChapterHref(normalizedSlug, safeSegment(nextChapter)) : "#"}
         disabled={!nextChapter}
         direction="next"
       >

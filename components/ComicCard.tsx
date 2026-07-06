@@ -4,7 +4,7 @@ import { BookOpen, Clock, Eye, Play } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { MouseEvent } from "react";
-import { cn } from "@/lib/utils";
+import { buildChapterHref, buildMangaHref, cn } from "@/lib/utils";
 import type { NormalizedComic } from "@/types/comic";
 
 export default function ComicCard({
@@ -16,11 +16,11 @@ export default function ComicCard({
   priority?: boolean;
   className?: string;
 }) {
-  const detailHref = comic.slug ? `/komik/${comic.slug}` : "/pustaka";
+  const detailHref = buildMangaHref(comic.slug);
   const chapterHref =
     comic.latestChapterHref ||
     (comic.slug && comic.latestChapterSlug
-      ? `/baca/${comic.slug}/${comic.latestChapterSlug}`
+      ? buildChapterHref(comic.slug, comic.latestChapterSlug)
       : "");
   const metaText = [comic.views, comic.updateTime].filter(Boolean).join(" | ");
   const taxonomy = comic.genre || comic.type || "Unknown";
@@ -42,7 +42,7 @@ export default function ComicCard({
         className="absolute inset-0 z-10"
       />
 
-      <div className="relative aspect-[16/9] w-full overflow-hidden bg-zinc-200 dark:bg-zinc-800">
+      <div className="relative aspect-[3/4.25] w-full overflow-hidden bg-zinc-200 dark:bg-zinc-800">
         {comic.thumbnail ? (
           <Image
             src={comic.thumbnail}

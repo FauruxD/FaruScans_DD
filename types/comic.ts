@@ -27,7 +27,7 @@ export interface NormalizedComic {
   description?: string;
 }
 
-export type PustakaTypeFilter = "all" | "doujin" | "doujinshi" | "manga" | "manhwa" | "manhua";
+export type PustakaTypeFilter = "all" | "latest" | "doujin" | "doujinshi" | "manga" | "manhwa" | "manhua";
 
 export type PustakaSortOption = "latest" | "az" | "za" | "views";
 
@@ -40,6 +40,18 @@ export interface ReaderControlChapter {
 export interface ApiResult<T> {
   data: T;
   error: string | null;
+}
+
+export interface PaginatedComics {
+  page: number;
+  currentPage: number;
+  results: NormalizedComic[];
+  hasNextPage: boolean;
+  nextPageUrl?: string | null;
+  sourceUrl?: string;
+  type?: string;
+  title?: string;
+  slug?: string;
 }
 
 // --- Doujindesu REST API ---
@@ -57,9 +69,13 @@ export type DoujindesuListItem = {
 
 export type DoujindesuDetail = {
   title?: string;
+  slug?: string;
   alternativeTitle?: string;
   description?: string;
+  sinopsis?: string;
+  synopsis?: string;
   cover?: string;
+  thumbnail?: string;
   type?: string;
   rating?: string;
   status?: string;
@@ -72,6 +88,7 @@ export type DoujindesuDetail = {
 
 export type DoujindesuChapter = {
   chapter?: string;
+  chapterNumber?: string;
   title?: string;
   slug?: string;
   url?: string;
@@ -81,6 +98,19 @@ export type DoujindesuChapter = {
 export type DoujindesuReader = {
   title?: string;
   chapter?: string;
+  chapterNumber?: string;
+  slug?: string;
+  url?: string;
+  detailUrl?: string;
+  comicTitle?: string;
+  mangaTitle?: string;
+  comic?: Record<string, unknown>;
+  manga?: Record<string, unknown>;
+  mangaInfo?: Record<string, unknown>;
+  detail?: Record<string, unknown>;
+  series?: Record<string, unknown>;
+  meta?: Record<string, unknown>;
+  navigation?: Record<string, unknown>;
   images?: string[];
   prevChapter?: {
     title?: string;

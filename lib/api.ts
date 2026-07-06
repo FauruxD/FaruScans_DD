@@ -9,23 +9,30 @@ import type {
   GenreDetailResponse,
   HomeResponse,
   NormalizedComic,
+  PaginatedComics,
   PopulerResponse,
   PustakaResponse,
   SearchResponse,
 } from "@/types/comic";
 import {
+  buildChapterHref,
+  buildMangaHref,
+  extractChapterFromApiLink,
   extractDoujindesuSlug,
+  extractSlugFromChapterLink,
+  normalizeChapterValue,
   normalizeDoujindesuDetail,
   normalizeDoujindesuItem,
   normalizeReaderImages,
+  parseKomiktapChapterSlug,
   safeSegment,
 } from "@/lib/utils";
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "https://doujindesu-rest-api.vercel.app";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
 type UnknownRecord = Record<string, unknown>;
-type LibraryType = "doujin" | "manga" | "manhwa";
+type LibraryType = "doujin" | "latest" | "manga" | "manhwa" | "manhua";
 
 function joinUrl(endpoint: string) {
   return `${BASE_URL.replace(/\/$/, "")}/${endpoint.replace(/^\//, "")}`;
@@ -65,30 +72,40 @@ async function safeApi<T>(
   }
 }
 
-export async function fetchDoujinList() {
-  return fetchComicList("/api/doujin", "Doujin");
+export async function fetchDoujinList(page = 1) {
+  return fetchComicList("/api/doujin", "Doujin", page);
 }
 
-export async function fetchMangaList() {
-  return fetchComicList("/api/manga", "Manga");
+export async function fetchMangaList(page = 1) {
+  return fetchComicList("/api/manga", "Manga", page);
 }
 
-export async function fetchManhwaList() {
-  return fetchComicList("/api/manhwa", "Manhwa");
+export async function fetchManhwaList(page = 1) {
+  return fetchComicList("/api/manhwa", "Manhwa", page);
+}
+
+export async function fetchManhuaList(page = 1) {
+  return fetchComicList("/api/manhua", "Manhua", page);
+}
+
+export async function fetchLatestUpdateList(page = 1) {
+  return fetchComicList("/api/comics?type=latest", "", page);
 }
 
 export async function fetchAllLibrary() {
   return safeApi<NormalizedComic[]>(async () => {
-    const [doujin, manga, manhwa] = await Promise.all([
+    const [doujin, manga, manhwa, manhua] = await Promise.all([
       fetchDoujinList(),
       fetchMangaList(),
       fetchManhwaList(),
+      fetchManhuaList(),
     ]);
 
     return dedupeComics([
       ...doujin.data,
       ...manga.data,
       ...manhwa.data,
+      ...manhua.data,
     ]);
   }, []);
 }
@@ -100,15 +117,17 @@ export async function fetchGenres() {
   );
 }
 
-export async function fetchGenreDetail(slug: string) {
+export async function fetchGenreDetail(slug: string, page = 1) {
   const normalizedSlug = extractDoujindesuSlug(slug);
+  const currentPage = normalizePage(page);
 
   return safeApi<GenreDetailResponse>(
     async () =>
       listToGenreDetail(
-        await fetcher<unknown>(`/api/genre/${normalizedSlug}`, 300)
+        await fetcher<unknown>(withPage(`/api/genre/${normalizedSlug}`, currentPage), 300),
+        currentPage
       ),
-    { success: false, currentPage: 1, data: [], hasNextPage: false }
+    { success: false, currentPage, data: [], hasNextPage: false }
   );
 }
 
@@ -151,10 +170,10 @@ export async function searchComics(query: string) {
   );
 }
 
-export async function fetchPopular() {
+export async function fetchPopular(page = 1) {
   return safeApi<NormalizedComic[]>(async () => {
     try {
-      const popular = normalizeComicList(await fetcher<unknown>("/api/popular", 300));
+      const popular = normalizeComicList(await fetcher<unknown>(withPage("/api/popular", page), 300));
       if (popular.length) return popular;
     } catch {
       // Popular is optional for this API. Fall back to the category catalog.
@@ -163,6 +182,34 @@ export async function fetchPopular() {
     const library = await fetchAllLibrary();
     return library.data;
   }, []);
+}
+
+export async function fetchMangaPage(page = 1) {
+  return fetchComicPage("/api/manga", "Manga", page);
+}
+
+export async function fetchManhwaPage(page = 1) {
+  return fetchComicPage("/api/manhwa", "Manhwa", page);
+}
+
+export async function fetchManhuaPage(page = 1) {
+  return fetchComicPage("/api/manhua", "Manhua", page);
+}
+
+export async function fetchPopularPage(page = 1) {
+  return fetchComicPage("/api/populer", "", page);
+}
+
+export async function fetchLatestUpdatePage(page = 1) {
+  return fetchComicPage("/api/comics?type=latest", "", page);
+}
+
+export async function fetchComicsByType(type: LibraryType, page = 1) {
+  if (type === "latest") return fetchLatestUpdatePage(page);
+  if (type === "manhwa") return fetchManhwaPage(page);
+  if (type === "manhua") return fetchManhuaPage(page);
+  if (type === "manga") return fetchMangaPage(page);
+  return fetchComicPage("/api/doujin", "Doujin", page);
 }
 
 export async function fetchHome() {
@@ -204,18 +251,33 @@ export const fetchColoredComics = fetchDoujin;
 export const fetchLibrary = async () => listResultToPustaka(await fetchAllLibrary());
 export const fetchLibraryComics = fetchLibrary;
 export async function fetchByType(type: LibraryType) {
+  if (type === "latest") return listResultToPustaka(await fetchLatestUpdateList());
   if (type === "doujin") return listResultToPustaka(await fetchDoujinList());
   if (type === "manhwa") return listResultToPustaka(await fetchManhwaList());
+  if (type === "manhua") return listResultToPustaka(await fetchManhuaList());
   return listResultToPustaka(await fetchMangaList());
 }
-export async function fetchChapterDetail(_comicSlug: string, chapterSlug: string) {
-  return fetchChapter(chapterSlug);
+export async function fetchChapterDetail(comicSlug: string, chapter: string) {
+  const normalizedSlug = extractDoujindesuSlug(comicSlug);
+  const normalizedChapter = normalizeChapterValue(chapter);
+
+  if (normalizedSlug && normalizedChapter) {
+    return safeApi<ChapterDetail | null>(
+      async () =>
+        normalizeDoujindesuReader(
+          unwrapData(await fetcher<unknown>(`/api/chapter/${normalizedSlug}/${normalizedChapter}`, 600))
+        ),
+      null
+    );
+  }
+
+  return fetchChapter(chapter);
 }
 
-function fetchComicList(endpoint: string, fallbackType: string) {
+function fetchComicList(endpoint: string, fallbackType: string, page = 1) {
   return safeApi<NormalizedComic[]>(
     async () =>
-      normalizeComicList(await fetcher<unknown>(endpoint, 300)).map((comic) => ({
+      normalizeComicList(await fetcher<unknown>(withPage(endpoint, page), 300)).map((comic) => ({
         ...comic,
         type: comic.type || fallbackType,
       })),
@@ -223,22 +285,46 @@ function fetchComicList(endpoint: string, fallbackType: string) {
   );
 }
 
+function fetchComicPage(endpoint: string, fallbackType: string, page = 1) {
+  const currentPage = normalizePage(page);
+
+  return safeApi<PaginatedComics>(
+    async () =>
+      normalizeComicPage(
+        await fetcher<unknown>(withPage(endpoint, currentPage), 300),
+        fallbackType,
+        currentPage
+      ),
+    emptyComicPage(currentPage)
+  );
+}
+
 function normalizeDoujindesuReader(raw: unknown): ChapterDetail {
   const reader = asRecord(raw) as DoujindesuReader & UnknownRecord;
+  const meta = asRecord(reader.meta);
+  const navigation = asRecord(reader.navigation);
+  const rawChapterSlug = String(reader.slug || meta.slug || reader.url || "");
+  const parsed = parseKomiktapChapterSlug(rawChapterSlug);
+  const chapterNumber =
+    normalizeChapterValue(reader.chapter as string | undefined) ||
+    normalizeChapterValue(reader.chapterNumber as string | undefined) ||
+    normalizeChapterValue(meta.chapterNumber as string | undefined) ||
+    parsed.chapter ||
+    extractChapterFromApiLink(reader.url as string | undefined);
   const chapterSlug =
-    extractDoujindesuSlug(reader.chapter as string | undefined) ||
-    extractDoujindesuSlug(reader.slug as string | undefined) ||
-    extractDoujindesuSlug(reader.url as string | undefined);
-  const prevChapter = normalizeReaderNav(reader.prevChapter);
-  const nextChapter = normalizeReaderNav(reader.nextChapter);
+    safeSegment(reader.slug as string | undefined) ||
+    safeSegment(meta.slug as string | undefined) ||
+    (parsed.mangaSlug && chapterNumber ? `${parsed.mangaSlug}-chapter-${chapterNumber}` : "");
+  const prevChapter = normalizeReaderNav(reader.prevChapter || navigation.prevChapter);
+  const nextChapter = normalizeReaderNav(reader.nextChapter || navigation.nextChapter);
   const images = normalizeReaderImages(reader.images);
 
   return {
-    title: String(reader.title || reader.chapter || chapterSlug || "Chapter").trim(),
+    title: String(reader.title || (chapterNumber ? `Chapter ${chapterNumber}` : chapterSlug) || "Chapter").trim(),
     mangaInfo: normalizeReaderMangaInfo(reader),
     images,
     meta: {
-      chapterNumber: chapterSlug,
+      chapterNumber,
       totalImages: images.length,
       slug: chapterSlug,
     },
@@ -250,11 +336,13 @@ function normalizeDoujindesuReader(raw: unknown): ChapterDetail {
 }
 
 function normalizeReaderMangaInfo(reader: DoujindesuReader & UnknownRecord) {
-  const comic = firstRecord(reader.comic, reader.manga, reader.detail, reader.series);
+  const comic = firstRecord(reader.comic, reader.manga, reader.detail, reader.series, reader.mangaInfo);
+  const parsed = parseKomiktapChapterSlug(String(reader.slug || asRecord(reader.meta).slug || reader.url || ""));
   const slug =
     extractDoujindesuSlug(comic.slug as string | undefined) ||
     extractDoujindesuSlug(comic.url as string | undefined) ||
     extractDoujindesuSlug(reader.detailUrl as string | undefined) ||
+    parsed.mangaSlug ||
     "";
 
   return {
@@ -269,18 +357,24 @@ function normalizeReaderNav(value: unknown) {
   const item = asRecord(value);
   if (!item) return null;
 
-  const slug =
-    extractDoujindesuSlug(item.slug as string | undefined) ||
-    extractDoujindesuSlug(item.url as string | undefined);
-  if (!slug) return null;
+  const sourceSlug = safeSegment(item.slug as string | undefined) || extractDoujindesuSlug(item.url as string | undefined);
+  const parsed = parseKomiktapChapterSlug(sourceSlug || (item.url as string | undefined));
+  const chapterNumber =
+    normalizeChapterValue(item.chapter as string | undefined) ||
+    normalizeChapterValue(item.chapterNumber as string | undefined) ||
+    parsed.chapter ||
+    extractChapterFromApiLink(item.url as string | undefined);
+  const mangaSlug = parsed.mangaSlug || extractSlugFromChapterLink(item.url as string | undefined);
+  const apiLink = mangaSlug && chapterNumber ? `/api/chapter/${mangaSlug}/${chapterNumber}` : sourceSlug ? `/api/chapter/${sourceSlug}` : "";
+  if (!sourceSlug && !chapterNumber) return null;
 
   return {
-    title: String(item.title || slug).trim(),
+    title: String(item.title || (chapterNumber ? `Chapter ${chapterNumber}` : sourceSlug)).trim(),
     originalLink: String(item.url || ""),
-    apiLink: `/api/chapter/${slug}`,
-    chapter: slug,
-    chapterNumber: slug,
-    slug,
+    apiLink,
+    chapter: chapterNumber,
+    chapterNumber,
+    slug: sourceSlug,
   };
 }
 
@@ -335,7 +429,36 @@ function normalizePopularResponse(raw: unknown): PopulerResponse {
   };
 }
 
-function listToGenreDetail(raw: unknown): GenreDetailResponse {
+function normalizeComicPage(raw: unknown, fallbackType: string, fallbackPage = 1): PaginatedComics {
+  const value = unwrapData(raw);
+  const record = asRecord(value);
+  const page = normalizePage(
+    Number(record.currentPage || record.page || record.current_page || fallbackPage)
+  );
+  const results = normalizeComicList(raw).map((comic) => ({
+    ...comic,
+    type: comic.type || fallbackType,
+  }));
+
+  return {
+    page,
+    currentPage: page,
+    results,
+    hasNextPage: Boolean(record.hasNextPage || record.has_next_page),
+    nextPageUrl: typeof record.nextPageUrl === "string" ? record.nextPageUrl : null,
+    sourceUrl: typeof record.sourceUrl === "string" ? record.sourceUrl : "",
+    type: typeof record.type === "string" ? record.type : fallbackType,
+    title: typeof record.title === "string" ? record.title : "",
+    slug: typeof record.slug === "string" ? record.slug : "",
+  };
+}
+
+function listToGenreDetail(raw: unknown, fallbackPage = 1): GenreDetailResponse {
+  const value = unwrapData(raw);
+  const record = asRecord(value);
+  const currentPage = normalizePage(
+    Number(record.currentPage || record.page || fallbackPage)
+  );
   const data = normalizeComicList(raw).map((item) => ({
     title: item.title,
     slug: item.slug,
@@ -349,7 +472,7 @@ function listToGenreDetail(raw: unknown): GenreDetailResponse {
       ? {
           latest: {
             chapter: item.latestChapterTitle,
-            apiLink: `/api/chapter/${item.latestChapterSlug}`,
+            apiLink: `/api/chapter/${item.slug}/${item.latestChapterSlug}`,
           },
         }
       : undefined,
@@ -357,8 +480,9 @@ function listToGenreDetail(raw: unknown): GenreDetailResponse {
 
   return {
     success: true,
-    currentPage: 1,
-    hasNextPage: false,
+    currentPage,
+    hasNextPage: Boolean(record.hasNextPage),
+    nextPageUrl: typeof record.nextPageUrl === "string" ? record.nextPageUrl : undefined,
     data,
   };
 }
@@ -380,14 +504,14 @@ function toPustakaItem(item: NormalizedComic) {
     thumbnail: item.thumbnail || item.cover,
     type: item.type,
     genre: item.genre || item.genres?.join(", "),
-    url: `/komik/${item.slug}`,
+    url: buildMangaHref(item.slug),
     detailUrl: `/api/detail/${item.slug}`,
     description: item.description,
     stats: item.updatedAt || item.rating,
     latestChapter: item.latestChapterSlug
       ? {
           title: item.latestChapterTitle,
-          url: `/api/chapter/${item.latestChapterSlug}`,
+          url: buildChapterHref(item.slug, item.latestChapterSlug),
         }
       : undefined,
   };
@@ -400,7 +524,7 @@ function toPopulerItem(item: NormalizedComic) {
     thumbnail: item.thumbnail || item.cover,
     genre: item.genre || item.genres?.join(", "),
     latestChapter: item.latestChapterTitle,
-    apiChapterLink: item.latestChapterSlug ? `/api/chapter/${item.latestChapterSlug}` : undefined,
+    apiChapterLink: item.latestChapterSlug ? `/api/chapter/${item.slug}/${item.latestChapterSlug}` : undefined,
     mangaSlug: item.slug,
     chapterNumber: item.latestChapterSlug,
     type: item.type,
@@ -421,6 +545,7 @@ function extractList(raw: unknown): unknown[] {
     record.doujins,
     record.manga,
     record.manhwa,
+    record.manhua,
     record.list,
     record.genres,
     record.latest,
@@ -500,5 +625,28 @@ function emptyHome(): HomeResponse {
     popular: {},
     recommended: [],
     genres: [],
+  };
+}
+
+function withPage(endpoint: string, page = 1) {
+  const currentPage = normalizePage(page);
+  const separator = endpoint.includes("?") ? "&" : "?";
+  return `${endpoint}${separator}page=${currentPage}`;
+}
+
+function normalizePage(value: number | string | null | undefined) {
+  const parsed = Number.parseInt(String(value || "1"), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+function emptyComicPage(page = 1): PaginatedComics {
+  const currentPage = normalizePage(page);
+
+  return {
+    page: currentPage,
+    currentPage,
+    results: [],
+    hasNextPage: false,
+    nextPageUrl: null,
   };
 }

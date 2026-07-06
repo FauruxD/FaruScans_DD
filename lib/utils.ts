@@ -34,8 +34,12 @@ export function extractDoujindesuSlug(urlOrSlug?: string | null): string {
   const cleanValue = decodeURIComponent(String(urlOrSlug)).trim();
   const apiDetailMatch = cleanValue.match(/\/api\/detail\/([^/?#]+)/);
   if (apiDetailMatch?.[1]) return safeSegment(apiDetailMatch[1]);
+  const apiChapterPairMatch = cleanValue.match(/\/api\/chapter\/([^/?#]+)\/([^/?#]+)/);
+  if (apiChapterPairMatch?.[1]) return safeSegment(apiChapterPairMatch[1]);
   const apiChapterMatch = cleanValue.match(/\/api\/chapter\/([^/?#]+)/);
   if (apiChapterMatch?.[1]) return safeSegment(apiChapterMatch[1]);
+  const mangaMatch = cleanValue.match(/\/manga\/([^/?#]+)/);
+  if (mangaMatch?.[1]) return safeSegment(mangaMatch[1]);
   const legacyDetailMatch = cleanValue.match(/\/detail-komik\/([^/?#]+)/);
   if (legacyDetailMatch?.[1]) return safeSegment(legacyDetailMatch[1]);
   const legacyChapterMatch = cleanValue.match(/\/baca-chapter\/[^/]+\/([^/?#]+)/);
@@ -64,20 +68,22 @@ export function extractKomikuSlugFromDetailLink(link?: string | null): string {
 export function extractChapterFromApiLink(link?: string | null): string {
   if (!link) return "";
   const cleanLink = decodeURIComponent(String(link)).trim();
+  const apiPairMatch = cleanLink.match(/\/api\/chapter\/[^/?#]+\/([^/?#]+)/);
+  if (apiPairMatch?.[1]) return safeSegment(apiPairMatch[1]);
   const doujinMatch = cleanLink.match(/\/api\/chapter\/([^/?#]+)/);
-  if (doujinMatch?.[1]) return safeSegment(doujinMatch[1]);
+  if (doujinMatch?.[1]) return parseKomiktapChapterSlug(doujinMatch[1]).chapter || safeSegment(doujinMatch[1]);
   const apiMatch = cleanLink.match(/\/baca-chapter\/[^/]+\/([^/?#]+)/);
   if (apiMatch?.[1]) return safeSegment(apiMatch[1]);
   const chapterMatch = cleanLink.match(/chapter-([\d.-]+)/i);
-  if (chapterMatch?.[1]) return safeSegment(chapterMatch[1]);
-  const segments = cleanLink.split(/[/?#]/)[0]?.split("/").filter(Boolean) || [];
-  return safeSegment(segments[segments.length - 1] || "");
+  if (chapterMatch?.[1]) return safeSegment(chapterMatch[1].replaceAll(".", "-"));
+  const segments = cleanLink.split(/[?#]/)[0]?.split("/").filter(Boolean) || [];
+  return parseKomiktapChapterSlug(segments[segments.length - 1]).chapter || safeSegment(segments[segments.length - 1] || "");
 }
 
 export function extractChapterFromText(text?: string | null): string {
   const match = String(text || "").match(/chapter\s*([\d]+(?:[.-][\d]+)?)/i);
   if (!match?.[1]) return "";
-  return safeSegment(match[1].replace(".", "-"));
+  return safeSegment(match[1].replaceAll(".", "-"));
 }
 
 /**
@@ -87,11 +93,13 @@ export function extractChapterFromText(text?: string | null): string {
 export function extractSlugFromChapterLink(link?: string | null): string {
   if (!link) return "";
   const cleanLink = decodeURIComponent(String(link)).trim();
+  const apiPairMatch = cleanLink.match(/\/api\/chapter\/([^/?#]+)\/[^/?#]+/);
+  if (apiPairMatch?.[1]) return safeSegment(apiPairMatch[1]);
   const doujinMatch = cleanLink.match(/\/api\/chapter\/([^/?#]+)/);
-  if (doujinMatch?.[1]) return safeSegment(doujinMatch[1]);
+  if (doujinMatch?.[1]) return parseKomiktapChapterSlug(doujinMatch[1]).mangaSlug || safeSegment(doujinMatch[1]);
   const apiMatch = cleanLink.match(/\/baca-chapter\/([^/]+)/);
   if (apiMatch?.[1]) return safeSegment(apiMatch[1]);
-  const chapterMatch = cleanLink.match(/\/([^/?#]+)-chapter-[\d.]+/i);
+  const chapterMatch = cleanLink.match(/\/([^/?#]+)-chapter-[\d.]+/i) || cleanLink.match(/^([^/?#]+)-chapter-[\d.]+/i);
   if (chapterMatch?.[1]) return safeSegment(chapterMatch[1]);
   return "";
 }
@@ -109,6 +117,38 @@ export function textFallback(value?: string | null, fallback = "Tidak tersedia")
 
 export function toArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : [];
+}
+
+export function buildMangaHref(slug?: string | null): string {
+  const normalizedSlug = safeSegment(slug);
+  return normalizedSlug ? `/manga/${normalizedSlug}` : "/pustaka";
+}
+
+export function buildChapterHref(mangaSlug?: string | null, chapter?: string | null): string {
+  const normalizedSlug = safeSegment(mangaSlug);
+  const normalizedChapter = safeSegment(chapter);
+  return normalizedSlug && normalizedChapter
+    ? `/${normalizedSlug}-chapter-${normalizedChapter.replace(/-/g, ".")}`
+    : "#";
+}
+
+export function parseKomiktapChapterSlug(chapterSlug?: string | null): {
+  mangaSlug: string;
+  chapter: string;
+} {
+  const normalizedSlug = safeSegment(chapterSlug);
+  const match = normalizedSlug.match(/^(.+)-chapter-([\d.-]+)$/i);
+  return {
+    mangaSlug: match?.[1] ? safeSegment(match[1]) : "",
+    chapter: match?.[2] ? safeSegment(match[2].replaceAll(".", "-")) : "",
+  };
+}
+
+export function normalizeChapterValue(value?: string | null): string {
+  const raw = String(value || "").trim();
+  const chapterMatch = raw.match(/chapter\s*([\d]+(?:[.-][\d]+)?)/i);
+  const numeric = chapterMatch?.[1] || (/^[\d.-]+$/.test(raw) ? raw : "");
+  return safeSegment(numeric.replaceAll(".", "-"));
 }
 
 export function normalizeSearchText(value?: string | null): string {
@@ -162,6 +202,7 @@ export function sortComics(
 }
 
 export function buildPustakaUrl({
+  page,
   search,
   type,
   genre,
@@ -177,6 +218,7 @@ export function buildPustakaUrl({
   const trimmedSearch = String(search || "").trim();
 
   if (trimmedSearch) params.set("search", trimmedSearch);
+  if (page && page > 1) params.set("page", String(page));
   if (type && type !== "all") params.set("type", type);
   if (genre && genre !== "all") params.set("genre", genre);
   if (sort && sort !== "latest") params.set("sort", sort);
@@ -204,7 +246,7 @@ export function normalizeReaderChapters(
       return {
         title: chapter.title || `Chapter ${chapterSlug || index + 1}`,
         chapterSlug,
-        href: `/baca/${normalizedSlug}/${chapterSlug}`,
+        href: buildChapterHref(normalizedSlug, chapterSlug),
       };
     })
     .filter((chapter): chapter is ReaderControlChapter => Boolean(chapter));
@@ -244,16 +286,18 @@ export function normalizeDoujindesuComicItem(item: DoujindesuListItem): Normaliz
       (typeof item.chapter === "string" ? item.chapter : "")
   ).trim();
   const chapterSlug =
-    extractDoujindesuSlug(record.latestChapterSlug) ||
-    extractDoujindesuSlug(record.chapterSlug) ||
-    extractDoujindesuSlug(latestChapterRecord.slug) ||
-    extractDoujindesuSlug(chapterRecord.slug) ||
-    extractDoujindesuSlug(record.latestChapterUrl) ||
-    extractDoujindesuSlug(record.chapterUrl) ||
-    extractDoujindesuSlug(latestChapterRecord.url) ||
-    extractDoujindesuSlug(chapterRecord.url) ||
-    (typeof item.chapter === "string" ? slugFromChapterText(item.chapter) : "") ||
-    (typeof item.latestChapter === "string" ? slugFromChapterText(item.latestChapter) : "");
+    normalizeChapterValue(latestChapterRecord.chapter) ||
+    normalizeChapterValue(chapterRecord.chapter) ||
+    normalizeChapterValue(record.latestChapterSlug) ||
+    normalizeChapterValue(record.chapterSlug) ||
+    parseKomiktapChapterSlug(latestChapterRecord.slug).chapter ||
+    parseKomiktapChapterSlug(chapterRecord.slug).chapter ||
+    extractChapterFromApiLink(record.latestChapterUrl) ||
+    extractChapterFromApiLink(record.chapterUrl) ||
+    extractChapterFromApiLink(latestChapterRecord.url) ||
+    extractChapterFromApiLink(chapterRecord.url) ||
+    (typeof item.chapter === "string" ? normalizeChapterValue(item.chapter) : "") ||
+    (typeof item.latestChapter === "string" ? extractChapterFromText(item.latestChapter) : "");
   const genres = Array.isArray(record.genres) ? record.genres.filter(Boolean) : [];
   const genre = genres.slice(0, 3).join(", ") || record.genre || "";
 
@@ -268,7 +312,7 @@ export function normalizeDoujindesuComicItem(item: DoujindesuListItem): Normaliz
     rating: item.rating,
     latestChapterTitle: latestTitle,
     latestChapterSlug: chapterSlug,
-    latestChapterHref: chapterSlug ? `/baca/${slug}/${chapterSlug}` : "",
+    latestChapterHref: chapterSlug ? buildChapterHref(slug, chapterSlug) : "",
     latestChapter: latestTitle || chapterSlug
       ? {
           title: latestTitle || chapterSlug,
@@ -282,19 +326,26 @@ export function normalizeDoujindesuComicItem(item: DoujindesuListItem): Normaliz
 export const normalizeDoujindesuItem = normalizeDoujindesuComicItem;
 
 export function normalizeDoujindesuChapter(item: DoujindesuChapter): ChapterItem {
-  const chapterSlug =
-    extractDoujindesuSlug(item.slug) ||
+  const sourceSlug =
+    safeSegment(item.slug) ||
     extractDoujindesuSlug(item.url) ||
     slugFromChapterText(item.chapter) ||
     slugFromChapterText(item.title);
-  const title = String(item.title || item.chapter || chapterSlug || "Chapter").trim();
+  const parsed = parseKomiktapChapterSlug(sourceSlug || item.url);
+  const chapterNumber =
+    normalizeChapterValue(item.chapter) ||
+    parsed.chapter ||
+    extractChapterFromApiLink(item.url) ||
+    extractChapterFromText(item.title);
+  const title = String(item.title || (chapterNumber ? `Chapter ${chapterNumber}` : sourceSlug) || "Chapter").trim();
+  const mangaSlug = parsed.mangaSlug || extractSlugFromChapterLink(item.url);
 
   return {
     title,
     originalLink: item.url,
-    apiLink: chapterSlug ? `/api/chapter/${chapterSlug}` : "",
+    apiLink: mangaSlug && chapterNumber ? `/api/chapter/${mangaSlug}/${chapterNumber}` : sourceSlug ? `/api/chapter/${sourceSlug}` : "",
     date: item.uploaded,
-    chapterNumber: chapterSlug,
+    chapterNumber,
   };
 }
 
@@ -320,6 +371,7 @@ export function normalizeDoujindesuDetail(data: DoujindesuDetail): ComicDetail {
     thumbnail,
     info,
     genres: [...toArray(data.genres), ...toArray(data.tags)].filter(Boolean),
+    slug: data.slug,
     firstChapter: chapters[chapters.length - 1],
     latestChapter: chapters[0],
     chapters,
@@ -410,10 +462,10 @@ export function extractLatestChapter(item: any, comicSlug?: string) {
   const slugFromLink = extractSlugFromChapterLink(apiLink);
   const chapter =
     extractChapterFromApiLink(apiLink) ||
-    item?.chapterSlug ||
-    item?.chapterNumber ||
-    item?.latestChapter?.chapterNumber ||
-    slugFromChapterText(item?.chapter) ||
+    normalizeChapterValue(item?.chapterSlug) ||
+    normalizeChapterValue(item?.chapterNumber) ||
+    normalizeChapterValue(item?.latestChapter?.chapterNumber) ||
+    normalizeChapterValue(item?.chapter) ||
     extractChapterFromText(rawTitle) ||
     slugFromChapterText(rawTitle);
   const slug = safeSegment(slugFromLink || comicSlug);
@@ -422,7 +474,7 @@ export function extractLatestChapter(item: any, comicSlug?: string) {
   return {
     title: String(chapterLabel || (chapter ? `Chapter ${chapter.replace("-", ".")}` : rawTitle)).trim(),
     chapter: safeSegment(chapter),
-    href: slug && chapter ? `/baca/${slug}/${safeSegment(chapter)}` : "",
+    href: slug && chapter ? buildChapterHref(slug, safeSegment(chapter)) : "",
   };
 }
 

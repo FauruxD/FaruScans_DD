@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import EmptyState from "@/components/EmptyState";
+import { buildChapterHref, buildMangaHref } from "@/lib/utils";
 import {
   getBookmarksSnapshot,
   parseBookmarksSnapshot,
@@ -45,7 +46,7 @@ export default function BookmarksPage() {
             {bookmarks.map((comic) => {
               const chapterHref =
                 comic.latestChapter?.chapterSlug && comic.slug
-                  ? `/baca/${comic.slug}/${comic.latestChapter.chapterSlug}`
+                  ? buildChapterHref(comic.slug, comic.latestChapter.chapterSlug)
                   : "";
 
               return (
@@ -53,7 +54,7 @@ export default function BookmarksPage() {
                   key={comic.slug}
                   className="group overflow-hidden rounded-lg border border-zinc-200 bg-white text-zinc-950 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-400/60 dark:border-white/10 dark:bg-zinc-900 dark:text-white"
                 >
-                  <Link href={`/komik/${comic.slug}`} className="block">
+                  <Link href={buildMangaHref(comic.slug)} className="block">
                     <div className="relative aspect-[16/9] overflow-hidden bg-zinc-200 dark:bg-zinc-800">
                       {comic.cover ? (
                         <Image
@@ -73,7 +74,7 @@ export default function BookmarksPage() {
 
                   <div className="space-y-2 p-3">
                     <Link
-                      href={`/komik/${comic.slug}`}
+                      href={buildMangaHref(comic.slug)}
                       className="line-clamp-2 min-h-10 text-sm font-bold leading-5 text-zinc-950 hover:text-cyan-600 dark:text-white dark:hover:text-cyan-300"
                     >
                       {comic.title}

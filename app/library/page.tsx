@@ -14,6 +14,7 @@ import {
   removeReadHistoryItem,
   subscribeReadChapters,
 } from "@/lib/reading-history";
+import { buildChapterHref } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -67,7 +68,7 @@ export default function LibraryPage() {
             <>
               <div className="space-y-2">
                 {paginatedHistory.map((item) => {
-                  const href = `/baca/${item.comicSlug}/${item.chapterSlug}`;
+                  const href = buildChapterHref(item.comicSlug, item.chapterSlug);
                   const comicTitle =
                     item.comicTitle || item.comicSlug.replaceAll("-", " ");
                   const chapterTitle = item.title || `Chapter ${item.chapterSlug}`;

@@ -28,10 +28,10 @@ const navItems = [
     isActive: (pathname: string) => pathname.startsWith("/pustaka"),
   },
   {
-    href: "/popular",
+    href: "/populer",
     label: "Popular",
     icon: Flame,
-    isActive: (pathname: string) => pathname.startsWith("/popular"),
+    isActive: (pathname: string) => pathname.startsWith("/populer") || pathname.startsWith("/popular"),
   },
   {
     href: "/library",
@@ -49,7 +49,7 @@ const navItems = [
 
 export default function Navbar() {
   const pathname = usePathname();
-  const isReaderPage = pathname.startsWith("/baca/");
+  const isReaderPage = pathname.startsWith("/baca/") || /^\/[^/]+-chapter-[\d.-]+\/?$/.test(pathname);
 
   return (
     <>

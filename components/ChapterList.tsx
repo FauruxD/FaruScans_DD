@@ -3,7 +3,7 @@
 import { BookOpen, Calendar, Eye, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { cn, extractChapterFromApiLink, safeSegment } from "@/lib/utils";
+import { buildChapterHref, buildMangaHref, cn, extractChapterFromApiLink, safeSegment } from "@/lib/utils";
 import {
   chapterKey,
   getReadChapters,
@@ -72,8 +72,8 @@ export default function ChapterList({
             chapter.chapterNumber || extractChapterFromApiLink(chapter.apiLink)
           );
           const href = chapterSlug
-            ? `/baca/${normalizedSlug}/${chapterSlug}`
-            : `/komik/${normalizedSlug}`;
+            ? buildChapterHref(normalizedSlug, chapterSlug)
+            : buildMangaHref(normalizedSlug);
           const read = chapterSlug
             ? readChapters.includes(chapterKey(normalizedSlug, chapterSlug))
             : false;

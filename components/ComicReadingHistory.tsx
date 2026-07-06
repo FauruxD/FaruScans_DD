@@ -8,7 +8,7 @@ import {
   type ReadChapter,
   subscribeReadChapters,
 } from "@/lib/reading-history";
-import { extractChapterFromApiLink, safeSegment } from "@/lib/utils";
+import { buildChapterHref, extractChapterFromApiLink, safeSegment } from "@/lib/utils";
 import type { ChapterItem } from "@/types/comic";
 
 export default function ComicReadingHistory({
@@ -75,7 +75,7 @@ export default function ComicReadingHistory({
             {items.map((item) => (
               <Link
                 key={`${item.chapterSlug}-${item.readAt}`}
-                href={`/baca/${normalizedSlug}/${item.chapterSlug}`}
+                href={buildChapterHref(normalizedSlug, item.chapterSlug)}
                 className="block rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 transition hover:bg-zinc-100 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
               >
                 <span className="flex items-center gap-2 text-sm font-bold text-zinc-900 dark:text-zinc-100">

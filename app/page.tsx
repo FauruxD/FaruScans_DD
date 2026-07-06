@@ -10,25 +10,33 @@ import StarfieldBackground from "@/components/StarfieldBackground";
 import {
   fetchDoujinList,
   fetchGenres,
+  fetchLatestUpdateList,
   fetchMangaList,
+  fetchManhuaList,
   fetchManhwaList,
 } from "@/lib/api";
 import { normalizeComicItem, safeSegment } from "@/lib/utils";
 
 export default async function Home() {
-  const [manhwa, doujin, manga, genresResult] = await Promise.all([
+  const [latest, manhwa, doujin, manga, manhua, genresResult] = await Promise.all([
+    fetchLatestUpdateList(),
     fetchManhwaList(),
     fetchDoujinList(),
     fetchMangaList(),
+    fetchManhuaList(),
     fetchGenres(),
   ]);
 
+  const latestComics = latest.data.map(normalizeComicItem).filter((item) => item.slug);
   const manhwaComics = manhwa.data.map(normalizeComicItem).filter((item) => item.slug);
   const doujinComics = doujin.data.map(normalizeComicItem).filter((item) => item.slug);
   const mangaComics = manga.data
     .map(normalizeComicItem)
     .filter((item) => item.slug);
-  const errors = [manhwa.error, doujin.error, manga.error, genresResult.error].filter(Boolean);
+  const manhuaComics = manhua.data
+    .map(normalizeComicItem)
+    .filter((item) => item.slug);
+  const errors = [latest.error, manhwa.error, doujin.error, manga.error, manhua.error, genresResult.error].filter(Boolean);
   const genres = genresResult.data;
 
   return (
@@ -88,24 +96,46 @@ export default async function Home() {
         <div className="space-y-6 py-5">
           <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-900/60 sm:p-5">
           <SectionHeader
+            title="Latest Update"
+            description="Update terbaru dari Komiktap."
+            href="/pustaka?type=latest&page=1"
+          />
+          <ComicGrid comics={latestComics.slice(0, 15)} emptyTitle="Latest update kosong" />
+        </section>
+
+        <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-900/60 sm:p-5">
+          <SectionHeader
             title="Manhwa"
-            description="Daftar manhwa dari Doujindesu."
-            href="/pustaka"
+            description="Daftar manhwa dari Komiktap."
+            href="/pustaka?type=manhwa"
           />
           <ComicGrid comics={manhwaComics.slice(0, 20)} emptyTitle="Manhwa kosong" />
         </section>
 
-        <section id="popular" className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-900/60 sm:p-5">
+        <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-900/60 sm:p-5">
           <SectionHeader
-            title="Doujin"
-            description="Daftar doujin dari Doujindesu."
+            title="Manga"
+            description="Daftar manga dari Komiktap."
+            href="/pustaka?type=manga"
           />
-          <ComicGrid comics={doujinComics.slice(0, 20)} emptyTitle="Doujin kosong" />
+          <ComicGrid comics={mangaComics.slice(0, 20)} emptyTitle="Manga kosong" />
         </section>
 
         <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-900/60 sm:p-5">
-          <SectionHeader title="Manga" description="Daftar manga dari Doujindesu." />
-          <ComicGrid comics={mangaComics.slice(0, 15)} emptyTitle="Manga kosong" />
+          <SectionHeader
+            title="Manhua"
+            description="Daftar manhua dari Komiktap."
+            href="/pustaka?type=manhua"
+          />
+          <ComicGrid comics={manhuaComics.slice(0, 20)} emptyTitle="Manhua kosong" />
+        </section>
+
+        <section id="popular" className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-900/60 sm:p-5">
+          <SectionHeader
+            title="Project"
+            description="Daftar project dari Komiktap."
+          />
+          <ComicGrid comics={doujinComics.slice(0, 20)} emptyTitle="Doujin kosong" />
         </section>
 
         <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-900/60 sm:p-5">

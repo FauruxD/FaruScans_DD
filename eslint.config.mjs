@@ -11,6 +11,7 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
+    "DD-Rest-Api/**",
     "Komiku-Rest-Api/**",
     "next-env.d.ts",
   ]),
